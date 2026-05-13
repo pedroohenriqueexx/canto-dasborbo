@@ -1,7 +1,8 @@
 FROM php:8.2-apache
 
-# Activar mod_rewrite para .htaccess funcionar
-RUN a2enmod rewrite
+# Corrigir conflito de MPM e activar mod_rewrite
+RUN a2dismod mpm_event mpm_worker 2>/dev/null; \
+    a2enmod mpm_prefork rewrite
 
 # Permitir .htaccess em todo o projecto
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
