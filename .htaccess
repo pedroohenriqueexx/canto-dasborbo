@@ -1,0 +1,15 @@
+RewriteEngine On
+
+# ── API ───────────────────────────────────────────────────────────────────────
+RewriteRule ^api/checkout/create/?$                     api/create.php          [L,QSA]
+RewriteRule ^api/checkout/transaction/([^/]+)/?$        api/transaction.php?id=$1 [L,QSA]
+RewriteRule ^api/webhook/?$                             api/webhook.php         [L,QSA]
+
+# ── Assets (css, fonts, images) servidos de dentro de ajude-agora/ ────────────
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(css|fonts|images)/(.+)$  ajude-agora/$1/$2  [L]
+
+# ── Páginas HTML ──────────────────────────────────────────────────────────────
+RewriteRule ^(index\.html)?$   ajude-agora/index.html    [L]
+RewriteRule ^checkout\.html$   ajude-agora/checkout.html [L]
+RewriteRule ^pagamento\.html$  ajude-agora/pagamento.html [L]

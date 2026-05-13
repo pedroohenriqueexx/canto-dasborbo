@@ -1,0 +1,16 @@
+# Ficheiros de transações temporárias
+api/transactions/*.json
+
+# Ficheiro zip do projeto
+*.zip
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
