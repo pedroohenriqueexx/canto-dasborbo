@@ -513,7 +513,7 @@
             function createNew() {
                 createTransactionAPI()
                 .then(function(data) {
-                    var tid = data.transactionId;
+                    var tid = data.id;
                     sessionStorage.setItem(paymentSessionKey, JSON.stringify({
                         id: tid,
                         referenceData: data.referenceData || null
