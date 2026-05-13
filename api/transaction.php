@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/config.php';
 header('Content-Type: application/json');
 
 $id = $_GET['id'] ?? '';
@@ -10,43 +9,35 @@ if (empty($id)) {
     exit;
 }
 
-$ch = curl_init(WAYMB_API . '/transactions/info');
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST           => true,
-    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-    CURLOPT_POSTFIELDS     => json_encode([
-        'client_id'     => WAYMB_CLIENT_ID,
-        'client_secret' => WAYMB_CLIENT_SECRET,
-        'transactionID' => $id,
-    ]),
-    CURLOPT_TIMEOUT        => 15,
-]);
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
+$txFile = __DIR__ . '/transactions/' . $id . '.json';
 
-$data = json_decode($response, true);
-
-if ($httpCode < 200 || $httpCode >= 300) {
-    http_response_code($httpCode ?: 500);
-    echo json_encode(['success' => false, 'message' => $data['message'] ?? 'Erro ao consultar transação']);
+if (!file_exists($txFile)) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'message' => 'Transação não encontrada']);
     exit;
 }
 
-$statusMap = ['COMPLETED' => 'paid', 'DECLINED' => 'failed', 'PENDING' => 'pending'];
+$txData = json_decode(file_get_contents($txFile), true);
 
-$result = [
-    'status' => $statusMap[$data['status']] ?? 'pending',
-    'amount' => $data['amount'],
+if (!$txData) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Erro ao ler transação']);
+    exit;
+}
+
+$statusMap = [
+    'paid'    => 'paid',
+    'declined' => 'failed',
+    'pending' => 'pending',
 ];
 
-if (!empty($data['referenceData'])) {
-    $result['referenceData'] = [
-        'entity'    => $data['referenceData']['entity']    ?? null,
-        'reference' => $data['referenceData']['reference'] ?? null,
-        'expiresAt' => $data['referenceData']['expiresAt'] ?? $data['referenceData']['expiry'] ?? null,
-    ];
+$result = [
+    'status' => $statusMap[$txData['status'] ?? 'pending'] ?? 'pending',
+    'amount' => $txData['amount'] ?? 0,
+];
+
+if (!empty($txData['referenceData'])) {
+    $result['referenceData'] = $txData['referenceData'];
 }
 
 echo json_encode(['success' => true, 'data' => $result]);

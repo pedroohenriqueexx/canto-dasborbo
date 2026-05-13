@@ -34,14 +34,16 @@ switch ($status) {
         error_log("[WEBHOOK] Pago: {$transactionID} — {$amount} {$currency} — " . ($payer['name'] ?? ''));
         utmify_send($txData, 'paid');
         metacapi_purchase($txData);
-        // Apagar ficheiro após uso
-        if (file_exists($txFile)) unlink($txFile);
+        // Actualizar status no ficheiro (frontend lê este estado)
+        $txData['status'] = 'paid';
+        file_put_contents($txFile, json_encode($txData));
         break;
 
     case 'DECLINED':
         error_log("[WEBHOOK] Recusado: {$transactionID}");
         utmify_send($txData, 'refused');
-        if (file_exists($txFile)) unlink($txFile);
+        $txData['status'] = 'declined';
+        file_put_contents($txFile, json_encode($txData));
         break;
 
     case 'PENDING':

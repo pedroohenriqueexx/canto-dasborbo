@@ -78,6 +78,7 @@ $txData = [
     'transactionID' => $data['transactionID'],
     'method'        => $body['method'],
     'amount'        => $amountEur,
+    'status'        => 'pending',
     'createdAt'     => gmdate('Y-m-d H:i:s'),
     'payer'         => [
         'name'     => $body['name'],
@@ -91,6 +92,14 @@ $txData = [
     'fbc'       => $body['_fbc']       ?? null,
     'fbp'       => $body['_fbp']       ?? null,
 ];
+
+if (!empty($data['referenceData'])) {
+    $txData['referenceData'] = [
+        'entity'    => $data['referenceData']['entity']    ?? null,
+        'reference' => $data['referenceData']['reference'] ?? null,
+        'expiresAt' => $data['referenceData']['expiresAt'] ?? $data['referenceData']['expiry'] ?? null,
+    ];
+}
 
 $storageDir = __DIR__ . '/transactions';
 if (!is_dir($storageDir)) mkdir($storageDir, 0750, true);
